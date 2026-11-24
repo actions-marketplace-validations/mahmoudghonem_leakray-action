@@ -1,0 +1,66 @@
+name: "LeakRay Security Scan"
+description: "Run 22 passive URL security checks on preview or production deployments (leaked keys, .env, Supabase/Firebase, headers, CORS)."
+author: "Mahmoud Ghonem"
+
+branding:
+  icon: "shield"
+  color: "green"
+
+inputs:
+  url:
+    description: "Target URL to scan passively (e.g. Vercel/Cloudflare preview URL or http://localhost:3000 with allow-local)."
+    required: true
+  fail-on:
+    description: "Fail the workflow if any finding meets or exceeds this severity (critical, high, medium, low, info, or none)."
+    required: false
+    default: "high"
+  allow-local:
+    description: "Allow scanning localhost / loopback / private network targets."
+    required: false
+    default: "false"
+  timeout:
+    description: "Overall scan timeout in milliseconds (1000-120000)."
+    required: false
+    default: "20000"
+  comment-on-pr:
+    description: "Post or update a clean LeakRay summary comment on pull requests."
+    required: false
+    default: "true"
+  github-token:
+    description: "GitHub token used to post/update PR comments (requires pull-requests: write)."
+    required: false
+    default: "${{ github.token }}"
+  cli-version:
+    description: "Version of the leakray npm package to run (e.g. latest or 0.2.0)."
+    required: false
+    default: "latest"
+
+outputs:
+  score:
+    description: "Numeric security score (0-100)."
+    value: ${{ steps.scan.outputs.score }}
+  grade:
+    description: "Letter grade (A+ to F)."
+    value: ${{ steps.scan.outputs.grade }}
+  findings-count:
+    description: "Total findings detected."
+    value: ${{ steps.scan.outputs.findings_count }}
+  actionable-count:
+    description: "Number of non-informational findings."
+    value: ${{ steps.scan.outputs.actionable_count }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run LeakRay passive scan
+      id: scan
+      shell: bash
+      env:
+        INPUT_URL: ${{ inputs.url }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_ALLOW_LOCAL: ${{ inputs.allow-local }}
+        INPUT_TIMEOUT: ${{ inputs.timeout }}
+        INPUT_COMMENT_ON_PR: ${{ inputs.comment-on-pr }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_CLI_VERSION: ${{ inputs.cli-version }}
+      run: node "${{ github.action_path }}/scripts/run.mjs"

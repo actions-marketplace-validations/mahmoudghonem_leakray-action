@@ -1,0 +1,29 @@
+name: Test LeakRay Action
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: leakray
+        uses: ./
+        with:
+          url: "https://leakray.dev"
+          fail-on: "high"
+      - name: Verify outputs
+        run: |
+          echo "Score: ${{ steps.leakray.outputs.score }}"
+          echo "Grade: ${{ steps.leakray.outputs.grade }}"
+          test "${{ steps.leakray.outputs.score }}" -ge 90
